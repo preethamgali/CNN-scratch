@@ -176,7 +176,7 @@ for e in range(epoch):
         
         de_relu1 = relu_prime(maxp1)*de_conv2
         de_maxp1 = d_maxpool(conv1,de_relu1)
-        de_conv1_f = dconv_filters(de_maxp1,conv1)                     
+        de_conv1_f = dconv_filters(de_maxp1,input_img)                     
 
         conv4_f = update_weights(conv4_f,de_conv4_f)
         conv3_f = update_weights(conv3_f,de_conv3_f)
