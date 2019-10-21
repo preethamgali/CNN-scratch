@@ -5,7 +5,9 @@ from keras.datasets import mnist
 import math
 
 def normalize_data(data):
-    return (data - np.mean(data))/np.max(data)
+    data  = data - np.mean(data)
+    data/=np.max(data)
+    return data
 
 def get_filters(shape,n):
     lis = []
@@ -107,11 +109,8 @@ def softmax(data):
 def cross_entropy(c_output,a_output):
     return -np.sum(a_output * np.log(c_output))
 
-def dcross_entropy(c_output,a_output):
+def dsoftmax_cross_entropy(c_output,a_output):
     return c_output - a_output
-
-def dsoftmax(data):
-    return softmax(data) * (1 - softmax(data))
 
 def update_weights(w,dw):
     for i in range(len(w)):
@@ -133,9 +132,12 @@ conv4_f = get_filters((3,3,5),10)
 
 epoch = 100
 
-
 for e in range(epoch):
-    for x,y in zip(X_train,y_train):
+    c = 0
+    number = 100
+    for x,y in zip(X_train[:number],y_train[:number]):
+        c+=1
+        
         input_img = normalize_data(x)
         conv1 = convolution(input_img , conv1_f)
         maxp1 = maxpool(conv1)
@@ -154,13 +156,10 @@ for e in range(epoch):
         conv4 = convolution(relu3, conv4_f)
         output = softmax(conv4)
         # print(conv4.shape,output.shape)
+        err = cross_entropy(output,y)
+        print("{} error: {}".format(c,err),end='\r')
 
-        err = cross_entropy(output,y_train[5])
-        # print(err)
-
-        de_ein = dcross_entropy(output,y)
-        dsoftout_softin = dsoftmax(conv4)
-        de_softin = de_ein * dsoftout_softin
+        de_softin = dsoftmax_cross_entropy(output,y)
 
         de_conv4_f = dconv_filters(de_softin,relu3)
         de_conv4 = dconv_img(de_softin,conv4_f)
@@ -182,13 +181,12 @@ for e in range(epoch):
         conv3_f = update_weights(conv3_f,de_conv3_f)
         conv2_f = update_weights(conv2_f,de_conv2_f)
         conv1_f = update_weights(conv1_f,de_conv1_f)
+        
 
-        if e%2 == 0:    
-            t_error = 0
-            counter = 0
-            for x1,y1 in zip(X_test[:100],y_test[:100]):
-                counter += 1
-                input_img = normalize_data(x)
+    if e%2 == 0:    
+            t=f=0
+            for x1,y1 in zip(X_train[:number],y_train[:number]):
+                input_img = normalize_data(x1)
                 conv1 = convolution(input_img , conv1_f)
                 maxp1 = maxpool(conv1)
                 relu1 = relu(maxp1)
@@ -206,8 +204,9 @@ for e in range(epoch):
                 conv4 = convolution(relu3, conv4_f)
                 output = softmax(conv4)
                 # print(conv4.shape,output.shape)
+                if y1[np.argmax(output)] == 1:
+                    t+=1
+                else:
+                    f+=1
 
-                err = cross_entropy(output,y_train[5])
-                t_error += err
-
-            print("epoch-{}   error-{}".format(e,t_error/counter))
+            print("epoch ",e,"     error",t/(t+f))
